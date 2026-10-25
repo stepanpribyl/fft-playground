@@ -133,6 +133,7 @@ class Function:
         self.data_set = self.data_set + sine
 
     def add_cosine(self, A, f, phi, gamma=0):
+        print("Adding cosine: ", f, "Hz ", phi, " deg")
         om = 2 * np.pi * f
         phi_rad = phi * np.pi / 180
         # print(f"OM: {om}, PH: {phi_rad}")
