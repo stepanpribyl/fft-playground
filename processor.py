@@ -277,6 +277,48 @@ class Processor:
                 f"Mód {idx + 1}: Frekvence = {peak['freq']:6.3f} Hz | Amplituda = {peak['magn']:5.2f}")
 
 
+    def plot_phase_based_error(self):
+        t = self.function.time_set
+        y = self.function.data_set
+        f0 = np.atleast_1d(np.asarray([peak["freq"] for peak in self.fft_peaks], float))
+        k = len(f0)
+
+        if k>2:
+            return
+
+        phis = np.arange(-np.pi, np.pi, np.pi / 8)
+        if not self.offset:
+            result_point = [self.result_params[i]["phi"] for i in range(k)]
+        #q[4 * i: 4 * i + 4] = [self.result_params[i][k] for k in ["A", "f", "gamma", "phi"]]
+
+        if k == 2:
+            phis1, phis2 = np.meshgrid(phis, phis)
+            errs, _ = np.meshgrid(phis, phis)
+            for line in range(len(phis)):
+                for column in range(len(phis)):
+                    p = []
+                    phis_matrix = phis1, phis2
+                    for i in range(k):
+                        qi = [self.result_params[i][key] for key in ["A", "f", "gamma"]]
+                        qi.append(phis_matrix[i][line][column])
+                        p.extend(qi)
+                    # errors.append(_full_resid(p, t, y, k, offset=False))
+                    errs[line][column] = sum(_full_resid(p, t, y, k, offset=False)**2)
+
+            plt.pcolormesh(phis1*180/np.pi, phis2*180/np.pi, errs)
+            plt.scatter(result_point[0], result_point[1], 5, color="red")
+            plt.colorbar(label='Elevation (feet)')
+            plt.title('Mapping Phase Shift Error')
+            plt.xlabel('Peak 1 Phase Shift')
+            plt.ylabel('Peak 2 Phase Shift')
+            plt.show()
+
+        elif k == 1:
+            plt.plot(phis, errors)
+            plt.title(f"Result phis: ")
+            plt.show()
+
+
     def fft_mapping(self):
         initial_guess = []  # [c, A1, f1, g1, ...]
         fft_values = self.function.fft_set
