@@ -223,6 +223,7 @@ class Processor:
         self.function: Function = function
         self.method: int = method
         self.output: str = ""
+        self.offset: bool = False
 
         self.fft_peaks: List[Dict[str, float]] = []
         self.optimized_peaks: List[Dict[str, float]] = []
@@ -323,6 +324,7 @@ class Processor:
         """
         # t = np.asarray(t, float) - t0
         # y = np.asarray(y, float)
+        self.offset = offset
         t = self.function.time_set - t0
         y = self.function.data_set
         f0 = np.atleast_1d(np.asarray([peak["freq"] for peak in self.fft_peaks], float))
@@ -369,11 +371,16 @@ class Processor:
                               phi=(pi_ + (np.pi if Ai < 0 else 0) + np.pi) % (2 * np.pi) - np.pi,
                               err_A=eA, err_f=ef, err_gamma=eg, err_phi=ep))
 
+
+            # regulated phase shift
+            phi_reg = (pi_ + (np.pi if Ai < 0 else 0) + np.pi) % (2 * np.pi) - np.pi
+            A_reg = abs(Ai)
             self.result_params.append(
-                dict(A=abs(Ai), f=fi, gamma=abs(gi), phi=fi*180/np.pi)
+                dict(A=abs(Ai), f=fi, gamma=abs(gi), phi=phi_reg*180/np.pi)
             )
             print(
-                f"Mód {i + 1}: Frekvence = {fi:6.3f} Hz | Amplituda = {Ai:5.4f} | Tlumení (gamma) = {gi:5.4f} | Phi = {pi_*180/np.pi}")
+                f"Mód {i + 1}: Frekvence = {fi:6.3f} Hz | Amplituda = {A_reg:5.4f} | Tlumení (gamma) = {gi:5.4f} | Phi = {phi_reg*180/np.pi}"
+            )
 
         peaks.sort(key=lambda d: d["f"])
         return dict(offset=p[0] if offset else 0.0, peaks=peaks, params=p, cov=cov,
