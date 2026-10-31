@@ -1,4 +1,5 @@
 from functools import wraps
+import numpy as np
 
 # Module-level history of the sum of squared residuals, one entry appended per
 # call of _varpro_resid (i.e. per optimiser function evaluation). Useful for
@@ -27,3 +28,11 @@ def register_results():
         return wrapper
 
     return decorator
+
+def apply_sliding_filter(data, sliding_filter):
+    data_filtered = data.copy()
+    sliding_filter_normed = sliding_filter / np.sum(sliding_filter)
+    for i in range(len(sliding_filter) - 1, len(data)):
+        data_filtered[i] = sum(
+            [data[i - j] * sliding_filter_normed[-j - 1] for j in range(len(sliding_filter_normed))])
+    return data_filtered
