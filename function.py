@@ -5,6 +5,8 @@ import re
 import os
 from typing import List
 
+import utils
+
 
 class TxtParserError(Exception):
     pass
@@ -119,10 +121,19 @@ class Function:
         self.N = int(fs * time)
         self.time_set = np.array([i/fs for i in range(self.N)])
         self.data_set = np.array(self.N*[0])
+        self.data_encapsulation = np.zeros_like(self.data_set)
         self.name = name
 
         self.fft_freq = abs(np.fft.rfftfreq(self.N))
         self.fft_set = abs(np.fft.rfft(self.data_set))
+
+    def encapsulate(self):
+        self.data_encapsulation = abs(self.data_set)
+        sliding_group = np.array([1, 2, 5, 5, 5, 3])
+        self.data_encapsulation_filtered = utils.apply_sliding_filter(self.data_encapsulation, sliding_group)
+
+        sliding_group = np.array([2, 2, 3, 4])
+        self.data_encapsulation_filtered = utils.apply_sliding_filter(self.data_encapsulation_filtered, sliding_group)
 
 
     def add_sine(self, A, f, phi, gamma=0):
@@ -173,6 +184,12 @@ class Function:
 
     def plot(self):
         plt.plot(self.time_set, self.data_set)
+        plt.show()
+
+    def plot_encapsulation(self):
+        self.encapsulate()
+        plt.plot(self.time_set, self.data_encapsulation_filtered)
+        plt.plot(self.time_set, np.abs(self.data_set))
         plt.show()
 
     def plot_fft(self):
