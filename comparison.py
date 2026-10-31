@@ -22,8 +22,8 @@ class Comparison:
                 axes[i, 0].set_ylabel("Amplitude")
                 axes[i, 1].plot(func.fft_freq, func.fft_set)
                 axes[i, 1].set_title(f"FFT {func.name}")
-                axes[i, 0].set_xlabel("Frequency")
-                axes[i, 0].set_ylabel("Amplitude")
+                axes[i, 1].set_xlabel("Frequency")
+                axes[i, 1].set_ylabel("Amplitude")
             else:
                 axes[0].plot(func.time_set, func.data_set)
                 axes[0].set_title(f"Function {func.name}")
