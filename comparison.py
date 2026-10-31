@@ -1,5 +1,6 @@
 from function import Function
 import matplotlib.pyplot as plt
+import numpy as np
 
 class Comparison:
     def __init__(self):
@@ -33,6 +34,11 @@ class Comparison:
                 axes[1].set_title(f"FFT {func.name}")
                 axes[1].set_xlabel("Frequency")
                 axes[1].set_ylabel("Amplitude")
+        plt.show()
+
+    def plot_residuals(self):
+        residuals = np.abs(self.functions[0].data_set - self.functions[1].data_set)
+        plt.plot(self.functions[0].time_set, residuals)
         plt.show()
 
 
