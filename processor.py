@@ -124,6 +124,8 @@ def _linear_solve(t, y, f, g, offset):
     coef, *_ = np.linalg.lstsq(X, y, rcond=None)
     return X, coef
 
+def get_residual_weight_function(t):
+    return np.ones_like(t) - np.exp(-t / t[-1])
 
 
 @utils.register_results()
@@ -162,6 +164,12 @@ def _varpro_resid(theta, t, y, k, offset):
     f, g = theta[:k], np.abs(theta[k:])  # abs: lm has no bounds
     X, coef = _linear_solve(t, y, f, g, offset)
     return X @ coef - y
+
+
+def _varpro_resid_weighted(theta, t, y, k, offset):
+    res = _varpro_resid(theta, t, y, k, offset)
+    return res * get_residual_weight_function(t)
+
 
 
 def damped_sum(t, params, k, offset=True):
@@ -216,12 +224,16 @@ def _full_resid(p, t, y, k, offset):
     """
     return damped_sum(t, p, k, offset) - y
 
+def _full_resid_weighted(p, t, y, k, offset):
+    return (damped_sum(t, p, k, offset) - y) * get_residual_weight_function(t)
+
 
 class Processor:
-    def __init__(self, function, method=0):
+    def __init__(self, function, method=0, weight_residuals=False):
         self.name: str = function.name
         self.function: Function = function
         self.method: int = method
+        self.weight_residuals: bool = weight_residuals
         self.output: str = ""
         self.offset: bool = False
 
@@ -377,7 +389,8 @@ class Processor:
             raise ValueError("not enough samples for this many peaks")
 
         # --- stage 1: variable projection over (f_i, g_i) ---
-        res1 = least_squares(_varpro_resid, np.r_[f0, g0], args=(t, y, k, offset),
+        projection_function = _varpro_resid_weighted if self.weight_residuals else _varpro_resid
+        res1 = least_squares(projection_function, np.r_[f0, g0], args=(t, y, k, offset),
                              method="lm", x_scale="jac", ftol=1e-15)
         f, g = res1.x[:k], np.abs(res1.x[k:])
         _, coef = _linear_solve(t, y, f, g, offset)
@@ -392,7 +405,8 @@ class Processor:
 
         # --- stage 2: joint polish in (A, f, g, phi) for covariance ---
         if polish:
-            res = least_squares(_full_resid, p, args=(t, y, k, offset), method="lm",
+            resid_function = _full_resid_weighted if self.weight_residuals else _full_resid
+            res = least_squares(resid_function, p, args=(t, y, k, offset), method="lm",
                                 x_scale="jac", ftol=1e-15)
             p = res.x
         J = res.jac
